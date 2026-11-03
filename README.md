@@ -1,2 +1,14 @@
-# 3110-final
-TBD
+# SpendWise
+Project Description
+
+SpendWise is a personal budget and expense tracking web application designed to help users organize their finances, monitor spending habits, and work toward their financial goals.
+
+Team Members
+
+[Labi Neha] — [lmn73]
+
+[Team Member 2] — [NetID]
+
+[Team Member 3] — [NetID]
+
+[Team Member 4] — [NetID]
