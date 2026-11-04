@@ -9,6 +9,6 @@ Team Members
 
 [Nandini Venkatesh] — [nv267]
 
-[Team Member 3] — [NetID]
+[Anjali Singh] — [as4429]
 
 [Team Member 4] — [NetID]
