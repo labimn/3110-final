@@ -12,3 +12,5 @@ Team Members
 [Anjali Singh] — [as4429]
 
 [Sam Sah-Nixon] — [ss4484]
+
+[Mina Liu] — [mtl79]
