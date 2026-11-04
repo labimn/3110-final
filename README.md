@@ -7,7 +7,7 @@ Team Members
 
 [Labi Neha] — [lmn73]
 
-[Team Member 2] — [NetID]
+[Nandini Venkatesh] — [nv267]
 
 [Team Member 3] — [NetID]
 
