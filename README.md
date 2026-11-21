@@ -17,21 +17,23 @@ Team Members
 
 Part 1: Transaction Management (User Input)
 
-Features:
+Implemented the core transaction management functionality, allowing users to manage income and expense records.
+
+Features
 
 Create income and expense transaction records.
 
 Add transactions while preventing duplicate IDs.
 
-Generate the next available transaction ID based on existing transactions.
+Generate the next available transaction ID.
 
-Retrieve an individual transaction by ID or view all transactions.
+Retrieve individual transactions by ID or view all transactions.
 
 Edit existing transactions while preserving their original IDs.
 
 Delete transactions by ID.
 
-Search transactions by description (case-insensitive partial matching).
+Search transactions by description using case-insensitive partial matching.
 
 Filter transactions by date, category, and transaction type.
 
@@ -39,21 +41,35 @@ Combine multiple filters in a single query.
 
 Validate transaction amounts, dates, transaction types, and text fields.
 
-Transaction Data:
+Transaction Data
 
-Each transaction stores:
+Each transaction stores the following information:
 
-ID
+ID: Unique identifier for each transaction.
 
-Amount
+Amount: Monetary value of the transaction.
 
-Date
+Date: Date the transaction occurred.
 
-Description
+Description: Description of the transaction.
 
-Category
+Category: Category assigned to the transaction.
 
-Transaction type (Income or Expense)
+Transaction Type: Income or Expense.
+
+Implementation Files
+
+The transaction management functionality is organized into the following files:
 
 
-Testing: run dune test to check the functionalities using the test suite
+lib/transaction.ml
+
+Contains the transaction data type, input parsing and validation, ID generation, and core transaction operations, including adding, editing, deleting, viewing, searching, and filtering.
+
+lib/transaction.mli
+
+Defines the public interface for the transaction module, specifying the types and functions that other modules can access.
+
+test/test_spendwise.ml
+
+Contains the test suite for transaction management, checking input parsing, validation, ID generation, and transaction operations.
