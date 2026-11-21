@@ -1,0 +1,4 @@
+(lang dune 3.23)
+(name spendwise)
+(sections (lib .) (doc ../../doc/spendwise))
+(files (lib (META dune-package opam)) (doc (README.md)))
