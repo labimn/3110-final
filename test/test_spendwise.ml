@@ -105,6 +105,111 @@ let test_next_transaction_id () =
   assert (next_transaction_id [t1] = 2);
   assert (next_transaction_id [t1; t2] = 4)
 
+module Budget = Spendwise.Budget
+
+let november_food_budget limit =
+  expect_ok (Budget.create_budget ~month:"2026-11" ~category:"Food" ~limit)
+
+(* Test budget creation and input validation. *)
+let test_budget_validation () =
+  let budget = november_food_budget 100. in
+  assert (Budget.month budget = "2026-11");
+  assert (Budget.category budget = "Food");
+  assert (Budget.limit budget = 100.);
+  assert (Result.is_error
+    (Budget.create_budget ~month:"2026-13" ~category:"Food" ~limit:100.));
+  assert (Result.is_error
+    (Budget.create_budget ~month:"2026-11" ~category:"  " ~limit:100.));
+  assert (Result.is_error
+    (Budget.create_budget ~month:"2026-11" ~category:"Food" ~limit:0.))
+
+(* Test lookup and uniqueness by month and category. *)
+let test_add_and_get_budgets () =
+  let november_food = november_food_budget 100. in
+  let budgets = expect_ok (Budget.add_budget november_food []) in
+  assert (Budget.get_budget ~month:"2026-11" ~category:"food" budgets
+    = Some november_food);
+
+  let duplicate =
+    expect_ok (Budget.create_budget ~month:"2026-11" ~category:"food" ~limit:150.)
+  in
+  assert (Result.is_error (Budget.add_budget duplicate budgets));
+
+  let december_food =
+    expect_ok (Budget.create_budget ~month:"2026-12" ~category:"Food" ~limit:100.)
+  in
+  let november_transport =
+    expect_ok (Budget.create_budget
+      ~month:"2026-11" ~category:"Transport" ~limit:75.)
+  in
+  let budgets = expect_ok (Budget.add_budget december_food budgets) in
+  let budgets = expect_ok (Budget.add_budget november_transport budgets) in
+  assert (List.length budgets = 3);
+  assert (Budget.get_budget ~month:"2026-12" ~category:"Food" budgets
+    = Some december_food);
+  assert (Budget.get_budget ~month:"2026-11" ~category:"Transport" budgets
+    = Some november_transport)
+
+(* Test updating a limit, rejecting a conflict, and deleting a budget. *)
+let test_edit_and_delete_budget () =
+  let food = november_food_budget 100. in
+  let transport =
+    expect_ok (Budget.create_budget
+      ~month:"2026-11" ~category:"Transport" ~limit:75.)
+  in
+  let updated_food = november_food_budget 150. in
+  let budgets =
+    expect_ok (Budget.edit_budget ~month:"2026-11" ~category:"food"
+      updated_food [food; transport])
+  in
+  assert (Budget.get_budget ~month:"2026-11" ~category:"Food" budgets
+    = Some updated_food);
+  assert (Result.is_error
+    (Budget.edit_budget ~month:"2026-11" ~category:"Food" transport budgets));
+  assert (Result.is_error
+    (Budget.edit_budget ~month:"2026-12" ~category:"Food" updated_food budgets));
+
+  let remaining =
+    expect_ok (Budget.delete_budget ~month:"2026-11" ~category:"food" budgets)
+  in
+  assert (remaining = [transport]);
+  assert (Budget.get_budget ~month:"2026-11" ~category:"Food" remaining = None);
+  assert (Result.is_error
+    (Budget.delete_budget ~month:"2026-11" ~category:"Food" remaining))
+
+(* Count matching expenses across days, using case-insensitive categories. *)
+let test_budget_summary () =
+  let budget = november_food_budget 100. in
+  let transactions = [
+    sample_transaction 1 25. "Groceries" "food" Expense;
+    create_transaction 2 25. "2026-11-01" "Lunch" "Food" Expense;
+    sample_transaction 3 30. "Income" "Food" Income;
+    create_transaction 4 25. "2026-12-01" "Groceries" "Food" Expense;
+    sample_transaction 5 20. "Bus pass" "Transport" Expense;
+  ] in
+  let summary = Budget.summarize budget transactions in
+  assert (summary.spent = 50.);
+  assert (summary.remaining = 50.);
+  assert (summary.warning = Budget.Below_threshold)
+
+(* Check spending below, at, and above each warning boundary. *)
+let test_budget_warnings () =
+  let budget = november_food_budget 100. in
+  let summarize_expense amount =
+    Budget.summarize budget
+      [sample_transaction 1 amount "Groceries" "Food" Expense]
+  in
+  let empty = Budget.summarize budget [] in
+  assert (empty.spent = 0.);
+  assert (empty.remaining = 100.);
+  assert (empty.warning = Budget.Below_threshold);
+  assert ((summarize_expense 79.99).warning = Budget.Below_threshold);
+  assert ((summarize_expense 80.).warning = Budget.Approaching_limit);
+  assert ((summarize_expense 100.).warning = Budget.At_limit);
+  let over = summarize_expense 110. in
+  assert (over.warning = Budget.Over_limit);
+  assert (over.remaining = -10.)
+
 let () =
   test_add_transaction ();
   test_view_transactions ();
@@ -114,4 +219,9 @@ let () =
   test_search_transactions ();
   test_parsing ();
   test_next_transaction_id ();
+  test_budget_validation ();
+  test_add_and_get_budgets ();
+  test_edit_and_delete_budget ();
+  test_budget_summary ();
+  test_budget_warnings ();
   print_endline "All SpendWise transaction tests passed!"
