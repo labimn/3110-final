@@ -56,3 +56,31 @@ The transaction management functionality is organized into the following files:
 - **`test/test_spendwise.ml`**  
   Contains the test suite for transaction management, checking input parsing, validation, ID generation, and transaction operations.
 
+## Part 2: Monthly Category Budgets
+
+Implemented the core budget logic for setting monthly spending limits by expense category and tracking spending against those limits.
+
+### Features
+
+- Create, edit, and delete monthly spending limits by category.
+- Allow one budget per month and category, with case-insensitive category matching.
+- Validate the month (`YYYY-MM`), category, and spending limit.
+- Calculate total spending from expense transactions in the budget's month and category.
+- Calculate the remaining budget by subtracting spending from the limit. A negative balance shows how much the budget was exceeded.
+- Return a warning status when spending reaches 80% of the limit, meets the limit exactly, or exceeds it. The browser interface can use this status to display a message.
+
+### Budget Data
+
+Each budget stores the following information:
+
+- **Month:** The budget period in `YYYY-MM` format.
+- **Category:** The expense category the limit applies to.
+- **Limit:** The maximum planned spending for that category and month.
+
+### Implementation Files
+
+- **`lib/budget.ml`**  
+  Implements budget validation, creation, lookup, editing, deletion, and spending summaries using the existing transaction records.
+
+- **`lib/budget.mli`**  
+  Defines the public budget interface, including budget operations, spending summaries, and warning statuses.
