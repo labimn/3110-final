@@ -19,7 +19,9 @@
  (name spendwise)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml)
+ (depends ocaml
+  (ounit2 :with-test)
+  js_of_ocaml js_of_ocaml-lwt js_of_ocaml-ppx lwt lwt_ppx)
  (allow_empty)
  (tags
   ("add topics" "to describe" your project)))

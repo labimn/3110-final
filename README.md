@@ -84,3 +84,43 @@ Each budget stores the following information:
 
 - **`lib/budget.mli`**  
   Defines the public budget interface, including budget operations, spending summaries, and warning statuses.
+## Part 3: Savings goals (Mina)
+
+The browser now supports creating, editing, deleting, and contributing to multiple
+savings goals. A goal has a name, target, optional deadline, contribution history,
+and progress bar. Editing preserves contributions. Overfunded goals retain the
+full saved amount while progress stops at 100% and remaining stops at zero.
+Amounts use whole cents internally to avoid decimal completion errors.
+
+- `lib/savings.mli`: public interface and validation rules; abstract goal type.
+- `lib/savings.ml`: pure savings logic, independent of browser and storage.
+- `bin/main.ml`: browser interaction and rendering using the savings module.
+- `test/test_mina.ml`: OUnit parser, savings, and summary integration tests.
+- `docs/mina-ms2.txt`: report material, validation evidence, and team handoff.
+
+Goals currently live in memory and are cleared on page reload. Account-specific
+persistence belongs to the storage/account component and is not implemented here.
+Contributions record allocations separately; they do not create expenses or deduct
+an account balance. The dashboard should consume `Savings.progress` without
+counting contributions again as spending.
+
+### Setup and checks
+
+With the course OCaml/OPAM environment active:
+
+```sh
+opam install . --deps-only --with-test
+dune build
+dune test
+```
+
+Dependencies, including the existing browser libraries and OUnit2 for the new test
+suite, are declared in `dune-project`; `spendwise.opam` is generated from it.
+
+To try the browser page, run the following from the repository root after building:
+
+```sh
+python3 -m http.server 8765 --bind 127.0.0.1 --directory _build/default/public
+```
+
+Open http://127.0.0.1:8765/ and use the savings form. Stop the server with Ctrl-C.
