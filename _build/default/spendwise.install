@@ -1,8 +1,0 @@
-lib: [
-  "_build/install/default/lib/spendwise/META"
-  "_build/install/default/lib/spendwise/dune-package"
-  "_build/install/default/lib/spendwise/opam"
-]
-doc: [
-  "_build/install/default/doc/spendwise/README.md"
-]
