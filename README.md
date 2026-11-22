@@ -157,3 +157,38 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory _build/default/public
 ```
 
 Open http://127.0.0.1:8765/ and use the savings form. Stop the server with Ctrl-C.
+
+## Part 3: Dashboard & Financial Analytics
+
+Implemented the core analytical calculations and period summaries for the financial dashboard, connecting transaction history and budget limits to provide high-level spending insights.
+
+### Features
+
+- Compute overall financial totals: total income, total expenses, and net remaining balance across all transactions.
+- Filter transactions dynamically across time periods (weekly 7-day rolling window, monthly by calendar month, and yearly by calendar year) relative to an anchor date.
+- Generate period summaries including period labels, high-level financial overviews, and sorted expense breakdowns.
+- Break down expense spending by category, calculating exact expenditure amounts and percentage shares of total spending, sorted from highest to lowest.
+- Track chronological monthly spending trends grouped by year and month (`YYYY-MM`).
+- Connect active monthly budgets with real transaction data, displaying spending summaries and warning statuses (approaching limit, at limit, over limit).
+
+### Analytics Data
+
+The analytics module introduces and works with the following data representations:
+
+- **Period:** The time window for financial summaries (`Weekly`, `Monthly`, or `Yearly`).
+- **Overview:** Aggregate monetary metrics (`total_income`, `total_expenses`, and `remaining_balance`).
+- **Category Breakdown:** Specific category spending details (`category`, `amount`, and `percentage`).
+- **Period Summary:** Combined report for a chosen time period containing the period type, formatted label, financial overview, and sorted category breakdowns.
+
+### Implementation Files
+
+The dashboard and financial analytics functionality is organized into the following files:
+
+- **`lib/analytics.ml`**  
+  Implements total calculations, deterministic period filtering, category breakdowns, monthly spending trends, and budget summary integrations.
+
+- **`lib/analytics.mli`**  
+  Defines the public interface for the analytics module, specifying types for reporting periods, overviews, breakdowns, and summary functions.
+
+- **`test/test_spendwise.ml`**  
+  Contains automated tests verifying overview calculations, period filtering boundaries, category expense distributions, and monthly spending trends.
