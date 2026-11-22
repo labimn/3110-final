@@ -210,6 +210,85 @@ let test_budget_warnings () =
   assert (over.warning = Budget.Over_limit);
   assert (over.remaining = -10.)
 
+
+module Analytics = Spendwise.Analytics
+
+(* Test overall income, expenses, and balance calculation. *)
+let test_analytics_overview () =
+  let t1 = sample_transaction 1 500. "Paycheck" "Income" Income in
+  let t2 = sample_transaction 2 120. "Groceries" "Food" Expense in
+  let t3 = sample_transaction 3 30. "Coffee" "Food" Expense in
+  let ov = Analytics.compute_overview [t1; t2; t3] in
+  assert (ov.total_income = 500.);
+  assert (ov.total_expenses = 150.);
+  assert (ov.remaining_balance = 350.);
+  let empty_ov = Analytics.compute_overview [] in
+  assert (empty_ov.total_income = 0.);
+  assert (empty_ov.total_expenses = 0.);
+  assert (empty_ov.remaining_balance = 0.)
+
+(* Test weekly, monthly, and yearly period filtering. *)
+let test_analytics_periods () =
+  let t_in_week = create_transaction 1 20. "2026-11-14" "Snack" "Food" Expense in
+  let t_on_anchor = create_transaction 2 40. "2026-11-20" "Dinner" "Food" Expense in
+  let t_old_month = create_transaction 3 100. "2026-10-31" "Rent" "Housing" Expense in
+  let t_prev_year = create_transaction 4 200. "2025-11-20" "Trip" "Travel" Expense in
+  let txs = [t_in_week; t_on_anchor; t_old_month; t_prev_year] in
+
+  let weekly =
+    expect_ok (Analytics.filter_by_period Analytics.Weekly ~anchor_date:"2026-11-20" txs)
+  in
+  assert (List.length weekly = 2);
+
+  let monthly =
+    expect_ok (Analytics.filter_by_period Analytics.Monthly ~anchor_date:"2026-11-20" txs)
+  in
+  assert (List.length monthly = 2);
+
+  let yearly =
+    expect_ok (Analytics.filter_by_period Analytics.Yearly ~anchor_date:"2026-11-20" txs)
+  in
+  assert (List.length yearly = 3);
+  assert (Result.is_error
+    (Analytics.filter_by_period Analytics.Monthly ~anchor_date:"bad-date" txs))
+
+(* Test category breakdown percentages, sorting, and monthly trend. *)
+let test_analytics_breakdown_and_trend () =
+  let t1 = create_transaction 1 75. "2026-11-05" "Groceries" "Food" Expense in
+  let t2 = create_transaction 2 25. "2026-11-10" "Metro" "Transport" Expense in
+  let t3 = create_transaction 3 500. "2026-11-01" "Bonus" "Work" Income in
+  let t4 = create_transaction 4 50. "2026-10-15" "Books" "Education" Expense in
+  let txs = [t1; t2; t3; t4] in
+
+  let breakdown = Analytics.expense_breakdown [t1; t2; t3] in
+  assert (List.length breakdown = 2);
+  let top = List.hd breakdown in
+  assert (top.category = "food");
+  assert (top.amount = 75.);
+  assert (abs_float (top.percentage -. 75.) < 0.001);
+
+  let trend = Analytics.monthly_spending_trend txs in
+  assert (trend = [("2026-10", 50.); ("2026-11", 100.)])
+
+(* Test period summary and budget overview integration. *)
+let test_analytics_summary_and_budgets () =
+  let t1 = sample_transaction 1 90. "Groceries" "Food" Expense in
+  let b1 = november_food_budget 100. in
+  let b2 =
+    expect_ok (Budget.create_budget ~month:"2026-12" ~category:"Food" ~limit:100.)
+  in
+  let summary =
+    expect_ok (Analytics.summarize_period Analytics.Monthly ~anchor_date:"2026-11-20" [t1])
+  in
+  assert (summary.label = "2026-11");
+  assert (summary.overview.total_expenses = 90.);
+
+  let budgets = Analytics.budget_overview ~month:"2026-11" [b1; b2] [t1] in
+  assert (List.length budgets = 1);
+  let (cat, b_sum) = List.hd budgets in
+  assert (cat = "Food");
+  assert (b_sum.warning = Budget.Approaching_limit)
+
 let () =
   test_add_transaction ();
   test_view_transactions ();
@@ -224,4 +303,8 @@ let () =
   test_edit_and_delete_budget ();
   test_budget_summary ();
   test_budget_warnings ();
-  print_endline "All SpendWise transaction tests passed!"
+  test_analytics_overview ();
+  test_analytics_periods ();
+  test_analytics_breakdown_and_trend ();
+  test_analytics_summary_and_budgets ();
+  print_endline "All SpendWise transaction tests passed"
