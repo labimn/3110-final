@@ -158,7 +158,7 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory _build/default/public
 
 Open http://127.0.0.1:8765/ and use the savings form. Stop the server with Ctrl-C.
 
-## Part 3: Dashboard & Financial Analytics
+## Part 4: Dashboard & Financial Analytics
 
 Implemented the core analytical calculations and period summaries for the financial dashboard, connecting transaction history and budget limits to provide high-level spending insights.
 
