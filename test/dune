@@ -1,3 +1,9 @@
 (test
  (name test_spendwise)
+ (modules test_spendwise)
  (libraries spendwise))
+
+(test
+ (name test_mina)
+ (modules test_mina)
+ (libraries spendwise ounit2))

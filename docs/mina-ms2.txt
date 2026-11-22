@@ -1,0 +1,112 @@
+MINA'S MS2 CONTRIBUTION AND HANDOFF
+
+Scope and ownership
+Mina Liu (mtl79): savings goals primary owner; parser/validation testing for the
+initial implementation; dashboard and financial analytics backup.
+Sam Sah-Nixon (ss4484): savings backup and storage/account primary owner.
+Anjali Singh (as4429): dashboard primary owner.
+
+Implemented work
+- lib/savings.ml and lib/savings.mli provide validated goal creation, lookup,
+  unique IDs, editing, deletion, contribution history, and progress summaries.
+- bin/main.ml connects the module to public/index.template.html and style.css.
+  Users can create multiple goals, set/clear a deadline, contribute, edit without
+  losing saved amounts, and delete. Progress displays saved, remaining, percent,
+  and completion. User text is inserted as textContent rather than HTML.
+- test/test_mina.ml adds 57 OUnit checks, including parser cases, savings behavior,
+  and transaction/budget integration relevant to future dashboard summaries.
+- lib/transaction.ml now rejects nonfinite amounts and requires ASCII digits in
+  date components. For example, infinity and 2026-+1-01 are rejected.
+- test/dune keeps the existing suite and adds the OUnit suite. dune-project and
+  generated spendwise.opam declare test and existing browser dependencies.
+
+Design and decisions
+Savings.goal is abstract so callers cannot directly overwrite saved totals.
+The module uses immutable lists and returns result errors for invalid operations.
+A list belongs to one user; the caller must select the correct user's list.
+Savings reuses Transaction.parse_text and parse_date; DOM handling stays in bin/.
+Whole cents are represented internally by exact integer-valued floats, bounded
+at 9,000,000,000,000,000 cents for native/JavaScript arithmetic. Targets and total
+saved are capped at $90 trillion. Fractional cents are rejected (with a small
+conversion tolerance for binary floating-point representation).
+Past deadlines are permitted. Deadlines do not prevent later contributions.
+Overfunding is permitted. Saved retains all contributions; remaining is at least
+zero and progress is capped at 100%. Lowering a target preserves saved history.
+Contributions are separate allocations and do not create income/expense records.
+Automatic balance deductions require an explicit team decision and integration.
+
+Validation completed
+Commands: dune build; dune test.
+Results: build passed; existing transaction/budget suite passed; 57 new OUnit
+checks passed. Test expectations use hand-derived examples, not implementation
+outputs: $250 toward $1,000 means $750 remaining and 25%; $250 toward $200
+means zero remaining and 100%; 10 cents + 70 cents reaches an 80-cent target.
+Parser checks cover whitespace, empty fields, zero/negative/nonnumeric/nonfinite
+amounts, date formatting, month/day boundaries, and Gregorian leap years.
+Savings checks cover independent goals, duplicate/missing IDs, invalid names,
+amounts and dates, editing, history preservation, deletion, overfunding, exact
+cent completion, excessive amounts, total overflow, and ID exhaustion.
+Integration checks confirm expense summaries change from $25 to $80 after an
+edit and back to $0 after deletion; income and savings allocations do not add
+expenses to a $100 food budget.
+
+Browser checks completed through the actual compiled OCaml application
+1. Create Vacation, target $1,000, deadline 2027-06-01: card starts at $0 / 0%.
+2. Add $250: observed $250 saved, $750 remaining, and 25% progress.
+3. Create Laptop with target $2,000 and no deadline: separate card stays at $0.
+4. Edit Vacation to Summer trip, target $200, clear deadline: observed original
+   $250 history preserved, zero remaining, 100%, and Goal reached.
+5. Add -$5 to Laptop: error appeared and saved amount stayed at zero.
+6. Delete Laptop: its card disappeared; Summer trip remained.
+7. Reload page: empty state appeared, consistent with the session-only notice.
+8. Re-create Vacation and contribute $250: observed expected 25% progress again.
+9. After the final clean build, create a $0.80 goal and add $0.10 then $0.70:
+   observed exactly $0.80 saved, $0 remaining, 100%, and Goal reached.
+These are completed interactive checks, not an automated browser test suite.
+
+Dashboard backup review and handoff
+There is no implemented dashboard/analytics module in this checkout, so no
+completed dashboard review or collaboration with Anjali is claimed. Reviewed
+Transaction and Budget interfaces and tested their summary dependencies.
+For Anjali: consume Savings.progress per goal for saved/remaining/percent; do not
+add savings allocations to expenses. Existing Budget.summarize filters month,
+category, and expense type and reacts to changed transaction lists. A future
+income/expenses/balance summary should use the same selected date period for
+all three, with balance = income - expenses. Important pending checks include
+empty periods, weekly/monthly/yearly boundaries, leap dates, income exclusion
+from expense totals, transaction edits/deletions, and category chart agreement
+with expense totals. Review these period boundaries together before integrating.
+
+Storage and backup handoff for Sam
+Public accessors expose id, name, target, deadline, and contributions for saving.
+To restore one record: validate its saved field types; call create_goal with its
+ID/name/target/deadline, add_goal to reject duplicate IDs, and replay each stored
+contribution through contribute. Return errors for bad records; do not silently
+skip corrupted contributions. Save each user's goal list separately and do not
+reuse another user's list. Storage must preserve cents, IDs, order, optional
+(deadline None) values, and contribution history. Proposed round-trip checks:
+empty list, multiple goals, overfunded goal, edited/cleared deadline, fractional
+dollar values, duplicate IDs, malformed fields, unreadable files, and isolation
+between two users. These storage checks are planned, not completed: no storage
+implementation exists in this checkout. Sam should review savings.mli and work
+through test_mina.ml before connecting persistence.
+
+Suggested responsibility-table entries (do not claim teammate review yet)
+Savings Goals | Mina | Sam | Working savings module, browser controls and tests;
+lib/savings.ml, lib/savings.mli, bin/main.ml, test/test_mina.ml | Next: storage
+integration with Sam and teammate review | Backup involvement: interface and
+test walkthrough planned; no completed Sam review claimed.
+Dashboard & Analytics (backup contribution only) | Anjali | Mina | Mina reviewed
+transaction/budget dependencies and added edit/delete summary integration checks
+in test/test_mina.ml | Next: agree period boundaries and review Anjali's actual
+dashboard once available | No dashboard implementation/review claimed yet.
+
+Remaining team dependencies
+Persistence/login, malformed saved-file checks, and dashboard integration are
+not complete. Mina's in-memory savings feature and added tests are implemented;
+full cross-account save/load and dashboard backup collaboration require the
+respective owners' code/review. Actual personal participation, teammate review,
+and report attribution must be confirmed by team members before submission.
+
+Setup note: opam lint reports the pre-existing placeholder license value LICENSE
+as a non-SPDX warning. No license was selected on the team's behalf.

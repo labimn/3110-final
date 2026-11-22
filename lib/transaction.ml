@@ -18,8 +18,8 @@ type transaction = {
 let parse_amount input =
   try
     let amount = float_of_string (String.trim input) in
-    if amount > 0. then Ok amount
-    else Error "Amount must be greater than zero."
+    if Float.is_finite amount && amount > 0. then Ok amount
+    else Error "Amount must be a positive, finite number."
   with Failure _ ->
     Error "Please enter a valid number."
 
@@ -60,6 +60,9 @@ let parse_date input =
          if String.length year <> 4
             || String.length month <> 2
             || String.length day <> 2
+            || not (List.for_all
+                 (String.for_all (fun c -> c >= '0' && c <= '9'))
+                 [year; month; day])
             || y < 1
             || d < 1
             || d > days_in_month

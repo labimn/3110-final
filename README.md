@@ -84,3 +84,76 @@ Each budget stores the following information:
 
 - **`lib/budget.mli`**  
   Defines the public budget interface, including budget operations, spending summaries, and warning statuses.
+
+## Part 3: Savings Goals (Mina)
+
+Implemented the core savings goal functionality and browser controls, allowing users to manage multiple goals and track their contributions and progress.
+
+### Features
+
+- Create, edit, and delete multiple savings goals.
+- Set a goal name, target amount, and optional deadline.
+- Record contributions toward each goal and view contribution history.
+- Display progress bars showing the percentage completed, amount saved, and amount remaining.
+- Preserve contribution history when editing a goal.
+- Allow contributions above the target while capping displayed progress at 100% and remaining at zero.
+- Validate goal names, amounts, and deadlines, and use whole cents internally to avoid decimal completion errors.
+
+### Savings Goal Data
+
+Each savings goal stores the following information:
+
+- **ID:** Unique identifier for the goal within the user's goal list.
+- **Name:** The financial objective the user is saving toward.
+- **Target Amount:** The amount the user intends to save.
+- **Deadline:** An optional target date in `YYYY-MM-DD` format.
+- **Contributions:** The history of amounts contributed toward the goal.
+
+The module calculates the total saved, remaining amount, completion percentage, and completion status from the target and contributions.
+
+### Implementation Files
+
+The savings goal functionality is organized into the following files:
+
+- **`lib/savings.ml`**\
+  Implements pure savings logic independent of browser and storage, including validation, creation, lookup, editing, deletion, contributions, and progress calculations.
+
+- **`lib/savings.mli`**\
+  Defines the public savings interface and validation rules, using an abstract goal type to protect contribution history and saved totals.
+
+- **`bin/main.ml`**\
+  Connects the savings module to browser input handling and renders goal cards, contribution history, and progress bars.
+
+- **`public/index.template.html` and `public/style.css`**\
+  Provide the savings goal form, page structure, and styling.
+
+- **`test/test_mina.ml`**\
+  Contains OUnit tests for transaction parser edge cases, savings goal behavior, and summary integration.
+
+- **`docs/mina-ms2.txt`**\
+  Records report material, validation evidence, and handoff notes for storage and dashboard integration.
+
+### Current Limitations and Integration
+
+Goals currently live in memory and are cleared on page reload. Account-specific persistence belongs to the storage/account component and is not implemented here. Contributions record allocations separately; they do not create expenses or deduct an account balance. The dashboard should consume `Savings.progress` without counting contributions again as spending.
+
+### Setup and checks
+
+With the course OCaml/OPAM environment active:
+
+```sh
+opam install . --deps-only --with-test
+dune build
+dune test
+```
+
+Dependencies, including the existing browser libraries and OUnit2 for the new test
+suite, are declared in `dune-project`; `spendwise.opam` is generated from it.
+
+To try the browser page, run the following from the repository root after building:
+
+```sh
+python3 -m http.server 8765 --bind 127.0.0.1 --directory _build/default/public
+```
+
+Open http://127.0.0.1:8765/ and use the savings form. Stop the server with Ctrl-C.
