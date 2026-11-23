@@ -4,31 +4,45 @@ module S = Spendwise.Savings
 let document = Dom_html.document
 let goals = ref []
 let editing = ref None
+
+(** Retrieves the DOM element with the given string id. *)
 let element id = Dom_html.getElementById id
 
+(** Retrieves the input DOM element with the given string id. Raises Failure if given string id does not exist or cannot be coerced into an inputElement *)
 let input id =
   Js.Opt.get
     (Dom_html.CoerceTo.input (element id))
     (fun () -> failwith ("Missing input: " ^ id))
 
+(** Get the value of an input element as a string. *)
 let value id = Js.to_string (input id)##.value
+
+(** Sets the value of the input with string id to value*)
 let set_value id value = (input id)##.value := Js.string value
+
+(** Set the text of a DOM node to value. *)
 let text node value = node##.textContent := Js.some (Js.string value)
+
+(** Append a child node to a parent node. *)
 let append parent child = Dom.appendChild parent child
 
+(** Returns a new DOM element with the given tag and text content. *)
 let node tag content =
   let result = document##createElement (Js.string tag) in
   text result content;
   result
 
+(** Display value on the page*)
 let message value = text (element "message") value
 
+(** Attach a callback function to a button's click event. *)
 let click button callback =
   button##.onclick :=
     Dom_html.handler (fun _ ->
         callback ();
         Js._false)
 
+(** Create a button with the given label and click callback function. *)
 let button label callback =
   let result = Dom_html.createButton document in
   result##setAttribute (Js.string "type") (Js.string "button");
@@ -36,8 +50,10 @@ let button label callback =
   click result callback;
   result
 
+(** Format a number as USD. *)
 let money amount = Printf.sprintf "$%.2f" amount
 
+(** Clears the goal form and exit editing mode. *)
 let reset_form () =
   editing := None;
   List.iter
@@ -46,6 +62,7 @@ let reset_form () =
   text (element "save-goal") "Create goal";
   (element "cancel-edit")##setAttribute (Js.string "hidden") (Js.string "")
 
+(** Applies a goal update. *)
 let rec apply result =
   match result with
   | Error error -> message error
@@ -54,6 +71,7 @@ let rec apply result =
       message "Saved for this session.";
       render ()
 
+(** Renders the current savings goals and their controls. *)
 and render () =
   let container = element "goals" in
   text container "";
@@ -133,6 +151,7 @@ and render () =
       append container card)
     !goals
 
+(** Checks if the goal form is valid and creates or updates a savings goal. *)
 let save () =
   match Spendwise.Transaction.parse_amount (value "goal-target") with
   | Error error -> message error
