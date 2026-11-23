@@ -53,3 +53,9 @@ val contribute : int -> amount:float -> goal list -> (goal list, string) result
 
 val add_contribution : goal -> float -> goal
 (** Adds a contribution to a goal and returns the updated goal. *)
+
+val string_of_goals : goal list -> string
+(** Converts the data of the current goals into one string. *)
+
+val load_goal : string -> (goal, string) result
+(** Converts a string into a list of goals. *)
