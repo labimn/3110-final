@@ -50,3 +50,6 @@ val contribute : int -> amount:float -> goal list -> (goal list, string) result
     totals above $90 trillion are rejected. Contributions above the target are
     allowed. No transaction is created or account balance deducted: allocation
     semantics require team agreement. *)
+
+val add_contribution : goal -> float -> goal
+(** Adds a contribution to a goal and returns the updated goal. *)

@@ -110,3 +110,6 @@ let contribute id ~amount goals =
                    contribution_cents = goal.contribution_cents @ [ amount ];
                  }
                  goals))
+
+let add_contribution goal contribution =
+  { goal with contribution_cents = goal.contribution_cents @ [ contribution ] } 
