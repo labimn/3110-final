@@ -135,7 +135,7 @@ The savings goal functionality is organized into the following files:
 
 ### Current Limitations and Integration
 
-Goals currently live in memory and are cleared on page reload. Account-specific persistence belongs to the storage/account component and is not implemented here. Contributions record allocations separately; they do not create expenses or deduct an account balance. The dashboard should consume `Savings.progress` without counting contributions again as spending.
+Goals currently live in the browsers local storage memory and are saved on the browser meaning it is only stored locally. Seperate accounts hav not been implemented yet and such all users on the same browser have the same account. Contributions record allocations separately; they do not create expenses or deduct an account balance. The dashboard should consume `Savings.progress` without counting contributions again as spending.
 
 ### Setup and checks
 
