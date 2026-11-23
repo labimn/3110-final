@@ -50,8 +50,7 @@ let parse_contributions text =
   let contributions = String.split_on_char ';' text in
   match contributions with
   | [""] -> []
-  | lst -> List.map (fun amount -> Js_of_ocaml.Console.console##log
-            (Js.string (amount));
+  | lst -> List.map (fun amount ->
             Result.get_ok (Spendwise.Transaction.parse_amount amount)) lst
          
 
@@ -245,9 +244,6 @@ let save () =
       | Ok _ ->
           reset_form ();
           apply result;
-          (** print to console*)
-          Js_of_ocaml.Console.console##log
-            (Js.string ("Saved goals: " ^ string_of_goals ()));
           save_file storage_file (string_of_goals ()))
 
 let () =
