@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,12 +8,14 @@
   <link rel="stylesheet" href="style.css">
   <script defer src="main.js"></script>
 </head>
+
 <body>
   <main>
     <h1>SpendWise</h1>
     <h2>Savings goals</h2>
     <p>Set a target, record contributions, and track your progress.</p>
-    <p class="notice">This version keeps goals for this browser session only. Reloading clears them. Contributions track savings separately from transactions and your account balance.</p>
+    <p class="notice">This version stores goals locally in browser storage. Clearing browser data will remove all saved
+      goals. Contributions track savings separately from transactions and your account balance.</p>
     <form id="goal-form">
       <label>Goal name <input id="goal-name" required></label>
       <label>Target amount ($) <input id="goal-target" type="number" min="0.01" step="0.01" required></label>
@@ -24,4 +27,5 @@
     <section id="goals" aria-label="Your savings goals"></section>
   </main>
 </body>
+
 </html>

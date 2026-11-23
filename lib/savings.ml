@@ -28,17 +28,26 @@ type progress = {
   percent : float;
   complete : bool;
 }
-
+(** Gives id of the goal *)
 let id goal = goal.id
+
+(** Gives the name of the goal *)
 let name goal = goal.name
+
+(** Gives the target amount of the goal *)
 let target goal = goal.target_cents /. 100.
+
+(** Gives the deadline of the goal *)
 let deadline goal = goal.deadline
 
+(** Gives the list of contributions to the goal *)
 let contributions goal =
   List.map (fun cents -> cents /. 100.) goal.contribution_cents
 
+(** Calculates the total amount saved in the goal *)
 let saved_cents goal = List.fold_left ( +. ) 0. goal.contribution_cents
 
+(** Creates a new goal with the specified parameters *)
 let create_goal ~id ~name ~target ~deadline =
   if id <= 0 then Error "Goal ID must be positive."
   else
@@ -55,6 +64,7 @@ let create_goal ~id ~name ~target ~deadline =
                 { id; name; target_cents; deadline; contribution_cents = [] })
               parsed))
 
+(** Calculates the progress of the goal *)
 let progress goal =
   let saved = saved_cents goal in
   {
@@ -64,21 +74,26 @@ let progress goal =
     complete = saved >= goal.target_cents;
   }
 
+(** Gets a goal from a list of goals by its id*)
 let get_goal id goals = List.find_opt (fun goal -> goal.id = id) goals
 
+(** Adds a new goal to the list of goals *)
 let add_goal goal goals =
   match get_goal goal.id goals with
   | Some _ -> Error "A goal with this ID already exists."
   | None -> Ok (goals @ [ goal ])
 
+(** Gets the next available goal ID *)
 let next_goal_id goals =
   let maximum = List.fold_left (fun acc goal -> max acc goal.id) 0 goals in
   if maximum = max_int then Error "No more goal IDs are available."
   else Ok (maximum + 1)
 
+(** Replaces a goal in the list at the current id with a new goal *)
 let replace id replacement goals =
   List.map (fun goal -> if goal.id = id then replacement else goal) goals
 
+(** Edits an existing goal in the list *)
 let edit_goal id ~name ~target ~deadline goals =
   match get_goal id goals with
   | None -> Error "Goal not found."
@@ -90,11 +105,13 @@ let edit_goal id ~name ~target ~deadline goals =
             goals)
         (create_goal ~id ~name ~target ~deadline)
 
+(** Deletes a goal from the list *)
 let delete_goal id goals =
   match get_goal id goals with
   | None -> Error "Goal not found."
   | Some _ -> Ok (List.filter (fun goal -> goal.id <> id) goals)
 
+(** Adds a contribution to a goal from the list of all goals*)
 let contribute id ~amount goals =
   match get_goal id goals with
   | None -> Error "Goal not found."
@@ -110,3 +127,58 @@ let contribute id ~amount goals =
                    contribution_cents = goal.contribution_cents @ [ amount ];
                  }
                  goals))
+
+(** Adds a contribution to an individual goal *)
+let add_contribution goal contribution =
+  { goal with contribution_cents = goal.contribution_cents @ [ contribution ] } 
+
+(** Converts the data of the current goals into one string. *)
+let string_of_goals goals =
+  String.concat "\n"
+    (List.map
+       (fun goal ->
+         let contributions =
+           String.concat ";"
+             (List.map
+                (fun amount -> Printf.sprintf "%.0f" (amount *. 100.))
+                (contributions goal))
+         in
+         [
+           string_of_int (id goal);
+           (name goal);
+           Printf.sprintf "%.0f" (target goal);
+           (Option.value ~default:"" (deadline goal));
+           contributions;
+         ]
+         |> String.concat ",")
+       goals)
+
+
+(** Parse a list of contribution amounts in cents. Contributions are seperated by semicolons. *)
+let parse_contributions text =
+  let contributions = String.split_on_char ';' text in
+  match contributions with
+  | [""] -> []
+  | lst -> List.map (fun amount ->
+            Result.get_ok (Transaction.parse_amount amount)) lst
+         
+  
+(** Parse one CSV row into a goal *)
+let load_goal line : (goal,string) result =
+  match String.split_on_char ',' line with
+  | [ id; name; target; deadline; contributions ] -> 
+      let id = int_of_string (String.trim id) in
+      let target = float_of_string (String.trim target) in
+      let contributions = parse_contributions contributions in
+      let deadline =
+        match String.trim deadline with
+        | "" -> None
+        | date -> Some date
+      in
+      let goal = (create_goal ~id:id ~name:name ~target:target ~deadline:deadline) in
+      if Result.is_error goal then Error "Saved goal data is invalid."
+      else
+      let goal = ref (Result.get_ok goal) in
+      List.iter (fun con -> goal := (add_contribution !goal con)) contributions;
+      Ok !goal
+  | _ -> Error "Saved goal data is invalid."
