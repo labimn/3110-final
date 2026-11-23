@@ -5,6 +5,76 @@ let document = Dom_html.document
 let goals = ref []
 let editing = ref None
 
+(** Temporary. Will change once multiple accounts are implemented*)
+let storage_file = "spendwise-goals.swg"
+
+(** Converts the data of the current goals into one string. *)
+let string_of_goals () =
+  String.concat "\n"
+    (List.map
+       (fun goal ->
+         let contributions =
+           String.concat ";"
+             (List.map
+                (fun amount -> Printf.sprintf "%.0f" (amount *. 100.))
+                (S.contributions goal))
+         in
+         [
+           string_of_int (S.id goal);
+           (S.name goal);
+           Printf.sprintf "%.0f" (S.target goal);
+           (Option.value ~default:"" (S.deadline goal));
+           contributions;
+         ]
+         |> String.concat ",")
+       !goals)
+
+(** We currently store the data in the browser's localStorage. This is persistent upon reloading and closing the browser. *)
+let storage =
+  Js.Optdef.get Dom_html.window##.localStorage (fun () ->
+      failwith "Browser localStorage is unavailable")
+
+(** Retrieves the saved goals document. *)
+let load_file key =
+  let saved = storage##getItem (Js.string key) in
+  if Js.Opt.test saved then
+    Js.to_string (Js.Opt.get saved (fun () -> Js.string ""))
+  else ""
+
+(** Save the complete goals document after every goal change with content. *)
+let save_file key content =
+  storage##setItem (Js.string key) (Js.string content)
+
+(** Parse a list of contribution amounts in cents. Contributions are seperated by semicolons. *)
+let parse_contributions text =
+  let contributions = String.split_on_char ';' text in
+  match contributions with
+  | [""] -> []
+  | lst -> List.map (fun amount -> Js_of_ocaml.Console.console##log
+            (Js.string (amount));
+            Result.get_ok (Spendwise.Transaction.parse_amount amount)) lst
+         
+
+(** Parse one CSV row into a goal *)
+let load_goal line : (S.goal,string) result =
+  match String.split_on_char ',' line with
+  | [ id; name; target; deadline; contributions ] -> 
+      let id = int_of_string (String.trim id) in
+      let target = float_of_string (String.trim target) in
+      let contributions = parse_contributions contributions in
+      let deadline =
+        match String.trim deadline with
+        | "" -> None
+        | date -> Some date
+      in
+      let goal = (S.create_goal ~id:id ~name:name ~target:target ~deadline:deadline) in
+      if Result.is_error goal then Error "Saved goal data is invalid."
+      else
+      let goal = ref (Result.get_ok goal) in
+      List.iter (fun con -> goal := (S.add_contribution !goal con)) contributions;
+      Ok !goal
+  | _ -> Error "Saved goal data is invalid."
+
 (** Retrieves the DOM element with the given string id. *)
 let element id = Dom_html.getElementById id
 
@@ -118,7 +188,7 @@ and render () =
                Spendwise.Transaction.parse_amount (Js.to_string amount##.value)
              with
              | Error error -> message error
-             | Ok amount -> apply (S.contribute (S.id goal) ~amount !goals)));
+             | Ok amount -> apply (S.contribute (S.id goal) ~amount !goals); save_file storage_file (string_of_goals ())));
       append card
         (node "p"
            ("Contributions: "
@@ -174,7 +244,11 @@ let save () =
       | Error error -> message error
       | Ok _ ->
           reset_form ();
-          apply result)
+          apply result;
+          (** print to console*)
+          Js_of_ocaml.Console.console##log
+            (Js.string ("Saved goals: " ^ string_of_goals ()));
+          save_file storage_file (string_of_goals ()))
 
 let () =
   let form =
@@ -182,6 +256,19 @@ let () =
       (Dom_html.CoerceTo.form (element "goal-form"))
       (fun () -> failwith "Missing goal form")
   in
+  (*Load saved goals *)
+  let file_string = load_file storage_file in
+  if file_string = "" then
+    message "No saved goals found. Create your first goal above."
+  else (
+    let string_list = String.split_on_char '\n' file_string in
+    List.iter
+      (fun line ->
+        match load_goal line with
+        | Error error -> message error
+        | Ok goal -> apply (S.add_goal goal !goals))
+      string_list);
+  
   form##.onsubmit :=
     Dom_html.handler (fun _ ->
         save ();
