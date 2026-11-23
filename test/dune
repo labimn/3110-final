@@ -7,3 +7,8 @@
  (name test_mina)
  (modules test_mina)
  (libraries spendwise ounit2))
+
+(test
+ (name test_parsing)
+ (modules test_parsing)
+ (libraries spendwise ounit2))
